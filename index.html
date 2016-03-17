@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Anomaly Detection</title>
+    <style type="text/css">
+      input{
+        padding:8px;
+      }
+
+      div{
+        margin-bottom:10px;
+        font-size:16px;
+      }
+
+      div#result{
+        font-size:24px;
+      }
+    </style>
+</head>
+<body>
+    <h2>Anomaly Detection</h2>
+    <input type="file" id="fileUpload" /><br><br>
+    <input type="number" id="x" placeholder="input x"><br><br>
+    <input type="number" id="y" placeholder="input y"><br><br>
+    <input type="number" id="threshold" placeholder="threshold value"><br><br>
+    <input type="button" id="upload" value="Calculate"/>
+    <hr/>
+    <br>
+    <div id="mean-x"></div>
+    <div id="mean-y"></div>
+    <div id="vrnc-x"></div>
+    <div id="vrnc-y"></div>
+    <div id="prodist-x"></div>
+    <div id="prodist-y"></div>
+    <div id="result"></div>
+</body>
+</html>
+<script type="text/javascript" src="http://ajax.googleapis.com/ajax/libs/jquery/1.8.3/jquery.min.js"></script>
+<script type="text/javascript">
+$(function () {
+    $("#upload").bind("click", function () {
+
+        if($("#x").val()=="" || $("#y").val()=="" || $("#threshold").val()==""){
+
+            alert("Fill in the input boxes.");
+        }
+
+        else{
+
+            var regex = /^([a-zA-Z0-9\s_\\.\-:])+(.csv|.txt)$/,
+            arr=[],x=[],y=[],sumX=0,sumY=0;
+
+            if (regex.test($("#fileUpload").val().toLowerCase())) {
+
+                if (typeof (FileReader) != "undefined") {
+
+                    var reader = new FileReader();
+                    reader.onload = function (e) {
+
+                        //var table = $("<table />");
+                        var rows = e.target.result.split("\n");
+                        //console.log(rows);
+                        for (var i = 1; i < rows.length; i++) {
+                            //var row = $("<tr />");
+                            var cells = rows[i].split(",");
+                            //console.log(cells);
+                            arr.push(cells);
+                        }
+                
+                        for(var i=0;i<arr.length-1;i++){
+                            x.push(Number(arr[i][0]));
+                            y.push(Number(arr[i][1]));
+                        }
+                        //console.log(x);
+                        //console.log(y);
+
+                        for(var i=0;i<x.length;i++){
+                            sumX+= x[i];
+                            sumY+= y[i];
+                        }
+
+                        /*mean of x,y*/
+                        var meanX= (sumX/x.length).toFixed(3),
+                        meanY= (sumY/y.length).toFixed(3);
+
+                        /*console.log(meanX);
+                        console.log(meanY);*/
+                        $("#mean-x").html("Mean of Data: "+"<b>"+meanX+"</b>");
+                        $("#mean-y").html("Mean of Data: "+"<b>"+meanY+"</b>");
+                        //console.log(Math.exp(-(((5-5.714)*(5-5.714))/(2*1.238))));
+                        /*end mean of x,y*/
+
+                        /*variance of x,y*/
+                        var vrncSumX=0, vrncSumY=0;
+                        for(var i=0;i<x.length;i++){
+                            vrncSumX += ((x[i]-meanX)*(x[i]-meanX))
+                            vrncSumY += ((y[i]-meanY)*(y[i]-meanY));
+                            //console.log(vrncSumX);
+                        }
+
+                        /*console.log(vrncSumX);
+                        console.log(vrncSumY);*/
+
+                        var vrncX= (vrncSumX/(x.length-1)).toFixed(3);
+                        var vrncY= (vrncSumY/(y.length-1)).toFixed(3);
+                        /*console.log(" ");
+                        console.log(vrncX);
+                        console.log(vrncY);*/
+                        $("#vrnc-x").html("Variance of Data: "+"<b>"+vrncX+"</b>");
+                        $("#vrnc-y").html("Variance of Data: "+"<b>"+vrncY+"</b>");
+                        /*end variance of x,y*/
+
+                        var inputX= $("#x").val(),
+                        inputY= $("#y").val(),
+                        threshold= $("#threshold").val();
+                        console.log(inputX+" "+inputY+" "+threshold);
+
+                        /*probability distribution formula*/
+                        var proDistX= (1/Math.sqrt(2*3.1416*vrncX))*Math.exp(-(((inputX- meanX)*(inputX- meanX))/(2*vrncX))),
+                        proDistY= (1/Math.sqrt(2*3.1416*vrncY))*Math.exp(-(((inputY- meanY)*(inputY- meanY))/(2*vrncY)));
+                        console.log(proDistX);
+                        console.log(proDistY);
+                        $("#prodist-x").html("p(X, mean, variance): "+"<b>"+proDistX.toFixed(8)+"</b>");
+                        $("#prodist-y").html("p(Y, mean, variance): "+"<b>"+proDistY.toFixed(8)+"</b>");
+                        /*end probability distribution formula*/
+
+                        if(proDistX<threshold || proDistY<threshold){
+                            $("#result").html("Test Data Anomaly");
+                        }
+
+                        else{
+                             $("#result").html("No Anomaly");
+                        }
+                    }
+                    reader.readAsText($("#fileUpload")[0].files[0]);
+                } 
+
+                else {
+                    alert("This browser does not support HTML5.");
+                }
+            } 
+
+            else {
+                alert("Please upload a valid CSV file.");
+            }
+        }
+    });
+});
+</script>
